@@ -30,9 +30,29 @@ import { customFontsToLoad } from "./theme"
 import Config from "./config"
 import { KeyboardProvider } from "react-native-keyboard-controller"
 import { loadDateFnsLocale } from "./utils/formatDate"
+import { QueryClient, QueryClientProvider } from "react-query"
+import { ONE_HOUR } from "./config/constants"
 
 export const NAVIGATION_PERSISTENCE_KEY = "NAVIGATION_STATE"
 
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      retry: false,
+      staleTime: ONE_HOUR,
+      onError(err: unknown | Error) {
+        console.error(err);
+      },
+    },
+    mutations: {
+      onError(err: unknown | Error) {
+        console.error(err);
+      },
+    },
+  },
+});
 // Web linking configuration
 const prefix = Linking.createURL("/")
 const config = {
@@ -115,15 +135,17 @@ function App(props: AppProps) {
 
   // otherwise, we're ready to render the app
   return (
-    <SafeAreaProvider initialMetrics={initialWindowMetrics}>
-      <KeyboardProvider>
-        <AppNavigator
-          linking={linking}
-          initialState={initialNavigationState}
-          onStateChange={onNavigationStateChange}
-        />
-      </KeyboardProvider>
-    </SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <SafeAreaProvider initialMetrics={initialWindowMetrics}>
+        <KeyboardProvider>
+          <AppNavigator
+            linking={linking}
+            initialState={initialNavigationState}
+            onStateChange={onNavigationStateChange}
+          />
+        </KeyboardProvider>
+      </SafeAreaProvider>
+    </QueryClientProvider>
   )
 }
 

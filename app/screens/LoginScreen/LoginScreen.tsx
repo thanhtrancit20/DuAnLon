@@ -1,10 +1,19 @@
 import { ComponentType, FC, useMemo, useState } from "react"
 import { observer } from "mobx-react-lite"
-import { StyleSheet, TouchableOpacity, View, ViewStyle } from "react-native"
+import { Alert, StyleSheet, TouchableOpacity, View, ViewStyle } from "react-native"
 import { AppStackScreenProps } from "@/navigators"
 import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
 import { colors, ThemedStyle } from "@/theme"
+import { LoginKey } from "@/queries/Auth/keys"
+import { Controller, useForm } from "react-hook-form";
+import { useLogin } from "@/queries/Auth/useLogin"
+import AsyncStorage from "@react-native-async-storage/async-storage"
+import { initialLoginFormValue, loginFormSchema, LoginFormType } from "./helpers"
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useAuthStore } from "@/zustand/auth/useAuthStore"
+import { useGetUserInfo } from "@/queries/Auth/useGetUserInfo"
+
 // import { useNavigation } from "@react-navigation/native"
 // import { useStores } from "@/models" 
 
@@ -13,9 +22,9 @@ interface LoginScreenProps extends AppStackScreenProps<"Login"> { }
 
 export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen() {
   const { themed } = useAppTheme()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
   const [isAuthPasswordHidden, setIsAuthPasswordHidden] = useState(true)
+  const { setUser, setTokens } = useAuthStore();
+  const { data: userinfo, onGetUserInfo } = useGetUserInfo();
 
   // Pull in one of our MST stores
   // const { someStore, anotherStore } = useStores()
@@ -40,9 +49,46 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen()
     [isAuthPasswordHidden, colors.palette.neutral800],
   )
 
-  const handleLogin = () => {
-    console.log("hehe");
-  }
+
+  const { onLogin } = useLogin({
+    onSuccess: (data) => {
+      const { accessToken, refreshToken } = data.result;
+      console.log(data.result)
+      AsyncStorage.setItem("accessToken", accessToken).catch((error) => {
+        console.error("Failed to save access token:", error);
+      });
+      setTokens(accessToken, refreshToken);
+      //test
+      if (accessToken) {
+        onGetUserInfo().catch((error) => {
+          console.error("Failed to get user info:", error);
+        });
+        console.log("🚀 ~ LoginScreen ~ userinfo:", userinfo);
+      }
+    },
+    onError: (error) => {
+      console.error("Login failed:", error);
+    },
+  });
+
+  const {
+    control,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<LoginFormType>({
+    defaultValues: initialLoginFormValue,
+    mode: "onChange",
+    shouldFocusError: true,
+    reValidateMode: "onChange",
+    resolver: zodResolver(loginFormSchema),
+  });
+
+  const onSubmit = (data: LoginFormType) => {
+    console.log("🚀 ~ onSubmit ~ data:", data);
+
+    onLogin(data);
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+  };
 
   return (
     <Screen preset="auto"
@@ -51,32 +97,45 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen()
 
       <Text text="Login" preset="heading" style={styles.title}></Text>
 
-      <TextField
-        value={email}
-        onChangeText={(value) => setEmail(value)}
-        autoCapitalize="none"
-        autoComplete="email"
-        autoCorrect={false}
-        keyboardType="email-address"
-        placeholder="Enter your email address"
-        label="Email"
-        containerStyle={themed($textField)}
-        inputWrapperStyle={{ backgroundColor: '#ededed' }}
+      <Controller
+        name={LoginKey.USERNAME}
+        control={control}
+        render={({ field }) => (
+          <TextField
+            value={field.value}
+            onChangeText={field.onChange}
+            autoCapitalize="none"
+            autoComplete="email"
+            autoCorrect={false}
+            keyboardType="email-address"
+            placeholder="Enter your email address"
+            label="Email"
+            containerStyle={themed($textField)}
+            inputWrapperStyle={{ backgroundColor: '#ededed' }}
+          />
+        )}
       />
 
-      <TextField
-        value={password}
-        onChangeText={(value) => setPassword(value)}
-        containerStyle={themed($textField)}
-        autoCapitalize="none"
-        autoComplete="password"
-        autoCorrect={false}
-        secureTextEntry={isAuthPasswordHidden}
-        labelTx="loginScreen:passwordFieldLabel"
-        placeholder="Enter your password"
-        RightAccessory={PasswordRightAccessory}
-        inputWrapperStyle={{ backgroundColor: '#ededed' }}
+      <Controller
+        name={LoginKey.PASSWORD}
+        control={control}
+        render={({ field }) => (
+          <TextField
+            value={field.value}
+            onChangeText={field.onChange}
+            containerStyle={themed($textField)}
+            autoCapitalize="none"
+            autoComplete="password"
+            autoCorrect={false}
+            secureTextEntry={isAuthPasswordHidden}
+            labelTx="loginScreen:passwordFieldLabel"
+            placeholder="Enter your password"
+            RightAccessory={PasswordRightAccessory}
+            inputWrapperStyle={{ backgroundColor: '#ededed' }}
+          />
+        )}
       />
+
 
       <TouchableOpacity>
         <Text text="Forgot Password?" preset="formLabel" style={styles.forgotPassword} />
@@ -87,7 +146,7 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen()
         text="Login"
         style={styles.button}
         textStyle={styles.buttonText}
-        onPress={handleLogin}
+        onPress={handleSubmit(onSubmit)}
       />
 
       <Text text="By logging into an account you are agreeing with our" style={{ fontSize: 12, textAlign: 'center', fontWeight: 'black' }} />
