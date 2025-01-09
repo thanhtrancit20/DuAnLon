@@ -1,60 +1,28 @@
+import { ComponentType, FC, useMemo, useState } from "react"
 import { observer } from "mobx-react-lite"
-import { ComponentType, FC, useEffect, useMemo, useRef, useState } from "react"
-import { TextInput, TextStyle, ViewStyle } from "react-native"
-import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "../components"
-import { useStores } from "../models"
-import { AppStackScreenProps } from "../navigators"
-import type { ThemedStyle } from "@/theme"
+import { StyleSheet, TouchableOpacity, View, ViewStyle } from "react-native"
+import { AppStackScreenProps } from "@/navigators"
+import { Button, Icon, Screen, Text, TextField, TextFieldAccessoryProps } from "@/components"
 import { useAppTheme } from "@/utils/useAppTheme"
+import { colors, ThemedStyle } from "@/theme"
+// import { useNavigation } from "@react-navigation/native"
+// import { useStores } from "@/models" 
 
-interface LoginScreenProps extends AppStackScreenProps<"Login"> {}
+interface LoginScreenProps extends AppStackScreenProps<"Login"> { }
 
-export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_props) {
-  const authPasswordInput = useRef<TextInput>(null)
 
-  const [authPassword, setAuthPassword] = useState("")
+export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen() {
+  const { themed } = useAppTheme()
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
   const [isAuthPasswordHidden, setIsAuthPasswordHidden] = useState(true)
-  const [isSubmitted, setIsSubmitted] = useState(false)
-  const [attemptsCount, setAttemptsCount] = useState(0)
-  const {
-    authenticationStore: { authEmail, setAuthEmail, setAuthToken, validationError },
-  } = useStores()
 
-  const {
-    themed,
-    theme: { colors },
-  } = useAppTheme()
+  // Pull in one of our MST stores
+  // const { someStore, anotherStore } = useStores()
 
-  useEffect(() => {
-    // Here is where you could fetch credentials from keychain or storage
-    // and pre-fill the form fields.
-    setAuthEmail("ignite@infinite.red")
-    setAuthPassword("ign1teIsAwes0m3")
 
-    // Return a "cleanup" function that React will run when the component unmounts
-    return () => {
-      setAuthPassword("")
-      setAuthEmail("")
-    }
-  }, [setAuthEmail])
-
-  const error = isSubmitted ? validationError : ""
-
-  function login() {
-    setIsSubmitted(true)
-    setAttemptsCount(attemptsCount + 1)
-
-    if (validationError) return
-
-    // Make a request to your server to get an authentication token.
-    // If successful, reset the fields and set the token.
-    setIsSubmitted(false)
-    setAuthPassword("")
-    setAuthEmail("")
-
-    // We'll mock this with a fake token.
-    setAuthToken(String(Date.now()))
-  }
+  // Pull in navigation via hook
+  // const navigation = useNavigation()
 
   const PasswordRightAccessory: ComponentType<TextFieldAccessoryProps> = useMemo(
     () =>
@@ -72,81 +40,115 @@ export const LoginScreen: FC<LoginScreenProps> = observer(function LoginScreen(_
     [isAuthPasswordHidden, colors.palette.neutral800],
   )
 
+  const handleLogin = () => {
+    console.log("hehe");
+  }
+
   return (
-    <Screen
-      preset="auto"
+    <Screen preset="auto"
       contentContainerStyle={themed($screenContentContainer)}
-      safeAreaEdges={["top", "bottom"]}
-    >
-      <Text testID="login-heading" tx="loginScreen:logIn" preset="heading" style={themed($logIn)} />
-      <Text tx="loginScreen:enterDetails" preset="subheading" style={themed($enterDetails)} />
-      {attemptsCount > 2 && (
-        <Text tx="loginScreen:hint" size="sm" weight="light" style={themed($hint)} />
-      )}
+      safeAreaEdges={["top", "bottom"]}>
+
+      <Text text="Login" preset="heading" style={styles.title}></Text>
 
       <TextField
-        value={authEmail}
-        onChangeText={setAuthEmail}
-        containerStyle={themed($textField)}
+        value={email}
+        onChangeText={(value) => setEmail(value)}
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
         keyboardType="email-address"
-        labelTx="loginScreen:emailFieldLabel"
-        placeholderTx="loginScreen:emailFieldPlaceholder"
-        helper={error}
-        status={error ? "error" : undefined}
-        onSubmitEditing={() => authPasswordInput.current?.focus()}
+        placeholder="Enter your email address"
+        label="Email"
+        containerStyle={themed($textField)}
+        inputWrapperStyle={{ backgroundColor: '#ededed' }}
       />
 
       <TextField
-        ref={authPasswordInput}
-        value={authPassword}
-        onChangeText={setAuthPassword}
+        value={password}
+        onChangeText={(value) => setPassword(value)}
         containerStyle={themed($textField)}
         autoCapitalize="none"
         autoComplete="password"
         autoCorrect={false}
         secureTextEntry={isAuthPasswordHidden}
         labelTx="loginScreen:passwordFieldLabel"
-        placeholderTx="loginScreen:passwordFieldPlaceholder"
-        onSubmitEditing={login}
+        placeholder="Enter your password"
         RightAccessory={PasswordRightAccessory}
+        inputWrapperStyle={{ backgroundColor: '#ededed' }}
       />
 
+      <TouchableOpacity>
+        <Text text="Forgot Password?" preset="formLabel" style={styles.forgotPassword} />
+      </TouchableOpacity>
+
+
       <Button
-        testID="login-button"
-        tx="loginScreen:tapToLogIn"
-        style={themed($tapButton)}
-        preset="reversed"
-        onPress={login}
+        text="Login"
+        style={styles.button}
+        textStyle={styles.buttonText}
+        onPress={handleLogin}
       />
+
+      <Text text="By logging into an account you are agreeing with our" style={{ fontSize: 12, textAlign: 'center', fontWeight: 'black' }} />
+      <View style={styles.policyGroup}>
+        <Text text="Terms and Conditions " style={styles.policyText} />
+        <Text text="and" style={{ fontSize: 12, textAlign: 'center' }} />
+        <Text text=" Privacy Statement" style={styles.policyText} />
+      </View>
+
     </Screen>
   )
+
 })
 
 const $screenContentContainer: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  paddingVertical: spacing.xxl,
+  paddingVertical: 70,
   paddingHorizontal: spacing.lg,
 })
 
-const $logIn: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.sm,
-})
-
-const $enterDetails: ThemedStyle<TextStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
-})
-
-const $hint: ThemedStyle<TextStyle> = ({ colors, spacing }) => ({
-  color: colors.tint,
-  marginBottom: spacing.md,
-})
-
 const $textField: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginBottom: spacing.lg,
+  marginTop: spacing.xxl,
 })
 
-const $tapButton: ThemedStyle<ViewStyle> = ({ spacing }) => ({
-  marginTop: spacing.xs,
+const styles = StyleSheet.create({
+  title: {
+    textAlign: "center",
+    color: 'blue',
+    fontWeight: 'bold'
+  },
+  button: {
+    marginTop: 48,
+    marginBottom: 25,
+    backgroundColor: '#225aeb',
+    color: 'red',
+    width: '80%',
+    alignSelf: 'center'
+  },
+  buttonText: {
+    fontSize: 20,
+    color: "white"
+  },
+  signUpGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    marginBottom: 20
+  },
+  policyGroup: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  policyText: {
+    fontSize: 12,
+    textAlign: 'center',
+    color: 'blue',
+    fontWeight: 'bold'
+  },
+  forgotPassword: {
+    color: 'blue',
+    alignSelf: 'flex-end',
+    marginTop: 5
+  }
 })

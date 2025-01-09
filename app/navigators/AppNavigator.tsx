@@ -10,7 +10,6 @@ import { observer } from "mobx-react-lite"
 import * as Screens from "@/screens"
 import Config from "../config"
 import { useStores } from "../models"
-import { DemoNavigator, DemoTabParamList } from "./DemoNavigator"
 import { navigationRef, useBackButtonHandler } from "./navigationUtilities"
 import { useAppTheme, useThemeProvider } from "@/utils/useAppTheme"
 import { ComponentProps } from "react"
@@ -29,11 +28,12 @@ import { ComponentProps } from "react"
  *   https://reactnavigation.org/docs/typescript/#organizing-types
  */
 export type AppStackParamList = {
-  Welcome: undefined
-  Login: undefined
-  Demo: NavigatorScreenParams<DemoTabParamList>
+  // Welcome: undefined
+  // Login: undefined
+  // Demo: NavigatorScreenParams<DemoTabParamList>
   // 🔥 Your screens go here
-  // IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
+  Login: undefined
+	// IGNITE_GENERATOR_ANCHOR_APP_STACK_PARAM_LIST
 }
 
 /**
@@ -68,9 +68,10 @@ const AppStack = observer(function AppStack() {
           backgroundColor: colors.background,
         },
       }}
-      initialRouteName={isAuthenticated ? "Welcome" : "Login"}
+      // initialRouteName={isAuthenticated ? "Welcome" : "Login"}
+      initialRouteName={isAuthenticated ? "Login" : "Login"}
     >
-      {isAuthenticated ? (
+      {/* {isAuthenticated ? (
         <>
           <Stack.Screen name="Welcome" component={Screens.WelcomeScreen} />
 
@@ -80,10 +81,11 @@ const AppStack = observer(function AppStack() {
         <>
           <Stack.Screen name="Login" component={Screens.LoginScreen} />
         </>
-      )}
+      )} */}
 
       {/** 🔥 Your screens go here */}
-      {/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
+      <Stack.Screen name="Login" component={Screens.LoginScreen} />
+			{/* IGNITE_GENERATOR_ANCHOR_APP_STACK_SCREENS */}
     </Stack.Navigator>
   )
 })
